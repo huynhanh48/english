@@ -1,5 +1,5 @@
 import fs from "fs";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, FunctionCallingConfigMode } from "@google/genai";
 import "dotenv/config";
 export const url = "/Users/anh/crawlDb/data/wordnewClone.json";
 
@@ -20,6 +20,90 @@ async function getEmbedding(s) {
   });
   const result = response.embeddings[0].values;
   return result;
+}
+// const toTranslateVn = (word) => {
+//   return {
+//     wordOrigin: word.english,
+//     // wordTranslate: word.vietname,
+//   };
+// };
+async function generatorWord(s) {
+  // const toTranslateVnDeclare = {
+  //   name: "toTranslateVn",
+  //   parameters: {
+  //     type: "object",
+  //     description:
+  //       " set one  word  to  translate   VienNam  into  function and  example  case  used  english  ",
+  //     properties: {
+  //       english: {
+  //         type: "string",
+  //         description:
+  //           " word  origin for   user   if  syntax  then  you  custome correct  ",
+  //       },
+  //       vietname: {
+  //         type: "string",
+  //         description: "word  after  have  translate   to VietNam",
+  //       },
+  //       example: {
+  //         type: "Array",
+  //         description: "Give some examples of usage in English. ",
+  //         items: {
+  //           type: "string",
+  //         },
+  //       },
+  //     },
+  //     required: ["english", "vietname", "example"],
+  //   },
+  // };
+  const toTranslateVnDeclare = {
+    name: "toTranslateVn",
+    parameters: {
+      type: "object",
+      description: `
+      Translate input from English to Vietnamese.
+      - If the input is a single word, return its Vietnamese meaning and some example usage.
+      - If the input is a sentence, return the full sentence translation and some example usage.
+      - If the input has an option theme, generate example usage according to the specified theme.
+      `,
+      properties: {
+        english: {
+          type: "string",
+          description: "Original English word or sentence.",
+        },
+        vietname: {
+          type: "string",
+          description: "Vietnamese translation.",
+        },
+        option: {
+          type: "string",
+          description:
+            "Theme or kind of the example generation (e.g., 'technology').",
+        },
+        example: {
+          type: "array",
+          description:
+            "Examples of usage for the word in English, based on the provided theme.",
+          items: { type: "string" },
+        },
+      },
+      required: ["english", "vietname", "example", "option"],
+    },
+  };
+  const reponse = await genai.models.generateContent({
+    model: "gemini-2.0-flash-001",
+    contents: s,
+    config: {
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.ANY,
+          allowedFunctionNames: ["toTranslateVn"],
+        },
+      },
+      tools: [{ functionDeclarations: [toTranslateVnDeclare] }],
+    },
+  });
+  console.log(reponse.functionCalls[0]);
+  return reponse.functionCalls[0];
 }
 
 function concatString(word, data = []) {
@@ -53,4 +137,4 @@ async function run() {
   });
 }
 
-export { concatString, getEmbedding, genai, delay };
+export { concatString, getEmbedding, genai, delay, generatorWord };

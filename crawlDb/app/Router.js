@@ -1,10 +1,22 @@
 import express from "express";
-import { concatString, getEmbedding, genai, url, delay } from "../embedding.js";
+import {
+  concatString,
+  getEmbedding,
+  genai,
+  url,
+  delay,
+  generatorWord,
+} from "../embedding.js";
 import fs from "fs";
 import Word from "./moduls/metaData.js";
 
 const router = express.Router();
 
+router.get("/question", async (req, res) => {
+  console.log("query   : ", req.query);
+  const word = req.query.q;
+  word ? res.json(await generatorWord(word)) : res.json(null);
+});
 router.post("/setmetadata", (req, res) => {
   console.log(req.body);
   res.json(req.body);
